@@ -1,0 +1,11 @@
+.login-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+}
+
+.form-card {
+    width: 100%;
+    max-width: 400px;
+}

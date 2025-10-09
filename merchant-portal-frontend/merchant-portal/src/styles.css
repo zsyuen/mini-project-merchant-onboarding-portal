@@ -1,0 +1,31 @@
+/* styles.css */
+
+body {
+  font-family: Inter, Arial, sans-serif;
+  background-color: #f8f9fa; /* Light gray page background */
+  padding: 40px 20px;
+}
+
+.container {
+  max-width: 1140px;
+  margin: auto;
+}
+
+/* Reusable card style for forms and results */
+.form-card {
+  background-color: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: 0.75rem;
+  padding: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Reusable validation styles */
+.is-invalid {
+  border-color: #dc3545 !important;
+}
+
+.invalid-feedback {
+  color: #dc3545;
+  display: block;
+}

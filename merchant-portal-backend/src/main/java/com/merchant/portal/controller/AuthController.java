@@ -33,13 +33,13 @@ public class AuthController {
 
         if (userOptional.isPresent()) {
             User user = userOptional.get();
-            // Check if the password matches the one in the database
             if (user.getPassword().equals(loginRequest.password)) {
-                // On success, return a dummy token
-                return ResponseEntity.ok(Map.of("token", "dummy-auth-token-for-" + user.getUsername()));
+                return ResponseEntity.ok(Map.of(
+                        "token", "dummy-auth-token-for-" + user.getUsername(),
+                        "role", user.getRole()!=null ? user.getRole() : "admin"
+                ));
             }
         }
-
         // If user is not found or password doesn't match, return an error
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
     }

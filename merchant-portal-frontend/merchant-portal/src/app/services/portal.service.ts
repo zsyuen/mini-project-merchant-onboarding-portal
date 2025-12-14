@@ -25,7 +25,7 @@ export class PortalService {
     tap(res => console.log('✅ FormData submit response:', res)),
     catchError(err => {
       console.error('❌ Service Error:', err);
-      return throwError(() => err); // 2. Make sure this returns throwError
+      return throwError(() => err);
     })
   );
   }
@@ -45,7 +45,6 @@ export class PortalService {
   }
 
    //Fetches all merchant applications.
-
   getApplications(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiBase}/applications`);
   }

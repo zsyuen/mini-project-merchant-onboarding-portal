@@ -16,13 +16,18 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        if (userRepository.findByUsername("admin").isEmpty()) {
-            User admin = new User();
-            admin.setUsername("admin");
-            admin.setPassword("password123");
-            admin.setEmail("admin@test.com");
-            userRepository.save(admin);
-            System.out.println("Default admin user created in 'users' table.");
+
+        // Create default Reviewer/Super Admin
+        if (userRepository.findByUsername("reviewer").isEmpty()) {
+            User reviewer = new User();
+            reviewer.setUsername("reviewer");
+            reviewer.setPassword("reviewer123");
+            reviewer.setEmail("reviewer@test.com");
+            reviewer.setRole("reviewer"); // This is the Super Admin role
+            userRepository.save(reviewer);
+            System.out.println("Default Reviewer is created.");
+        }else{
+            System.out.println("Reviewer already exists.");
         }
     }
 }

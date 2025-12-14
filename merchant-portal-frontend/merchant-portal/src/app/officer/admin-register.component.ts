@@ -47,8 +47,6 @@ export class AdminRegisterComponent {
       role: 'admin'
     };
 
-    console.log('👤 Sending Admin registration:', data);
-
     this.svc.createAdmin(data).subscribe({
       next: (response) => {
         console.log('Admin registration successful:', response);

@@ -6,7 +6,8 @@ import { AdminRegisterComponent } from './officer/admin-register.component';
 import { ManageAdminsComponent } from './officer/manage-admins.component';
 import { ViewApplicationComponent } from './officer/view-application.component';
 import { LoginComponent } from './officer/login/login.component';
-import { authGuard } from './guards/auth.guard';       
+import { authGuard } from './guards/auth.guard';
+import { roleGuard } from './guards/role.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/merchant/register', pathMatch: 'full' },
@@ -25,7 +26,7 @@ export const routes: Routes = [
   { 
     path: 'officer/register', 
     component: AdminRegisterComponent,
-    canActivate: [authGuard] // <-- 4. Protect this route
+    canActivate: [authGuard, roleGuard] // <-- 4. Protect this route
   },
   { 
     path: 'officer/manage', 

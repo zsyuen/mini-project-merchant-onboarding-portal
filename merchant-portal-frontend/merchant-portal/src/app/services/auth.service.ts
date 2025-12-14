@@ -10,6 +10,7 @@ import { Observable } from 'rxjs';
 export class AuthService {
   private apiUrl = 'http://localhost:8080/api/auth';
   private authTokenKey = 'auth-token';
+  private authRoleKey = 'auth-role';
 
   constructor(private http: HttpClient, private router: Router) { }
 
@@ -17,6 +18,7 @@ export class AuthService {
     return this.http.post(`${this.apiUrl}/login`, credentials).pipe(
       tap((response: any) => {
         this.saveToken(response.token);
+        this.saveRole(response.role);
       })
     );
   }
@@ -29,6 +31,19 @@ export class AuthService {
     return localStorage.getItem(this.authTokenKey);
   }
 
+  saveRole(role: string): void {
+    localStorage.setItem(this.authRoleKey, role);
+  }
+
+  getRole(): string | null {
+    return localStorage.getItem(this.authRoleKey);
+  }
+
+  // Check if user is a Reviewer (Super Admin)
+  isReviewer(): boolean {
+    return this.getRole() === 'reviewer';
+  }
+
   isAuthenticated(): boolean {
     // Check if a token exists
     return !!this.getToken();
@@ -36,6 +51,7 @@ export class AuthService {
 
   logout(): void {
     localStorage.removeItem(this.authTokenKey);
+    localStorage.removeItem(this.authRoleKey);
     this.router.navigate(['/officer/login']);
   }
 }

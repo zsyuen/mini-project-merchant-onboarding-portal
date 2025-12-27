@@ -78,4 +78,11 @@ public class Application {
     private String schemeRequired;
     private String facilityRequired;
     private String proofOfBusiness;
+
+    // ================================
+    // Facial Verification
+    // ================================
+    private String selfieImage;
+    private Double facialSimilarityScore;
+    private String verificationStatus; // "VERIFIED" or "REJECTED"
 }

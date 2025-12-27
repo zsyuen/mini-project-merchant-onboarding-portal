@@ -12,8 +12,9 @@ import org.springframework.web.multipart.MultipartFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Map;
-
 import java.util.List;
+import com.merchant.portal.service.FaceVerificationService;
+import java.nio.file.Paths;
 
 @RestController
 @RequestMapping("/api/applications")
@@ -22,10 +23,12 @@ public class ApplicationController {
     private static final Logger log = LoggerFactory.getLogger(ApplicationController.class);
     private final ApplicationService applicationService;
     private final FileStorageService fileStorageService;
+    private final FaceVerificationService faceVerificationService;
 
-    public ApplicationController(ApplicationService applicationService, FileStorageService fileStorageService) {
+    public ApplicationController(ApplicationService applicationService, FileStorageService fileStorageService, FaceVerificationService faceVerificationService) {
         this.applicationService = applicationService;
         this.fileStorageService = fileStorageService;
+        this.faceVerificationService = faceVerificationService;
     }
 
     // Handle form data
@@ -63,13 +66,20 @@ public class ApplicationController {
             @RequestParam("facilityRequired") String facilityRequired,
             @RequestPart("ownerIdFront") MultipartFile ownerIdFront,
             @RequestPart("ownerIdBack") MultipartFile ownerIdBack,
-            @RequestPart("proofOfBusiness") MultipartFile proofOfBusiness
+            @RequestPart("proofOfBusiness") MultipartFile proofOfBusiness,
+            @RequestPart("liveSelfie") MultipartFile liveSelfie
     ) {
         try {
             // Save files and get their stored filenames
             String ownerIdFrontPath = fileStorageService.save(ownerIdFront);
             String ownerIdBackPath = fileStorageService.save(ownerIdBack);
             String proofOfBusinessPath = fileStorageService.save(proofOfBusiness);
+            String liveSelfiePath = fileStorageService.save(liveSelfie);
+            double score = faceVerificationService.compareFaces(
+                    Paths.get("uploads/" + ownerIdFrontPath),
+                    Paths.get("uploads/" + liveSelfiePath)
+            );
+            String status = faceVerificationService.isMatch(score) ? "VERIFIED" : "MANUAL_REVIEW";
 
             // Manually build the Application object
             Application app = new Application();
@@ -102,6 +112,9 @@ public class ApplicationController {
             app.setNumberOfEmployees(numEmployees);
             app.setSchemeRequired(schemeRequired);
             app.setFacilityRequired(facilityRequired);
+            app.setSelfieImage(liveSelfiePath);
+            app.setFacialSimilarityScore(score);
+            app.setVerificationStatus(status);
 
             // Set the saved file paths
             app.setIdUploadFront(ownerIdFrontPath);

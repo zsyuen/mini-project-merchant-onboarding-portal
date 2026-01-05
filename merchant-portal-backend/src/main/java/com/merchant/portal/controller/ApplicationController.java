@@ -75,11 +75,17 @@ public class ApplicationController {
             String ownerIdBackPath = fileStorageService.save(ownerIdBack);
             String proofOfBusinessPath = fileStorageService.save(proofOfBusiness);
             String liveSelfiePath = fileStorageService.save(liveSelfie);
+
+            // Calculate Score & Confidence level
             double score = faceVerificationService.compareFaces(
                     Paths.get("uploads/" + ownerIdFrontPath),
                     Paths.get("uploads/" + liveSelfiePath)
             );
-            String status = faceVerificationService.isMatch(score) ? "VERIFIED" : "MANUAL_REVIEW";
+            // Get Confidence level (High/ Medium/ Low) for admin reviewing
+            String confidence = faceVerificationService.getConfidenceLevel(score);
+
+            // Set initial status to PENDING for admin review
+            String initialStatus = "PENDING";
 
             // Manually build the Application object
             Application app = new Application();
@@ -114,7 +120,8 @@ public class ApplicationController {
             app.setFacilityRequired(facilityRequired);
             app.setSelfieImage(liveSelfiePath);
             app.setFacialSimilarityScore(score);
-            app.setVerificationStatus(status);
+            app.setConfidenceLevel(confidence); //Admin sees High/ Medium/ Low
+            app.setVerificationStatus(initialStatus);
 
             // Set the saved file paths
             app.setIdUploadFront(ownerIdFrontPath);

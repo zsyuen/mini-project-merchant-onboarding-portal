@@ -84,5 +84,6 @@ public class Application {
     // ================================
     private String selfieImage;
     private Double facialSimilarityScore;
-    private String verificationStatus; // "VERIFIED" or "REJECTED"
+    private String confidenceLevel; // "HIGH", "MEDIUM", "LOW"
+    private String verificationStatus; // "PENDING"/ "VERIFIED"/ "REJECTED"
 }

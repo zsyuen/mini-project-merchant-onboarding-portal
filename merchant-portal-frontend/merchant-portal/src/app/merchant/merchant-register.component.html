@@ -253,7 +253,7 @@
         </div>
       </div>
 
-<h5 class="fw-bold mt-4">Identity Verification</h5>
+      <h5 class="fw-bold mt-4">Identity Verification</h5>
 <div class="card p-3 mb-4 bg-light">
   <div class="row">
     <div class="col-md-6 d-flex flex-column align-items-center">
@@ -273,12 +273,9 @@
           Capture Photo
         </button>
       </div>
-      
-      <div class="mt-2 w-100" *ngIf="feedbackMessage">
-        <div class="alert alert-{{feedbackClass}} py-2 px-3 mb-0 text-center" role="alert">
-          <strong>{{ feedbackMessage }}</strong>
-        </div>
-      </div>
+      <small class="text-danger mt-1" *ngIf="!isFaceDetected && isCameraActive">
+        No face detected. Please look at the camera.
+      </small>
     </div>
     
     <div class="col-md-6">
@@ -287,8 +284,7 @@
         1. Ensure good lighting.<br>
         2. Remove glasses/masks.<br>
         3. Look straight at the camera.<br>
-        4. Center your face in the frame.<br>
-        5. Wait for the green "Ready to capture" message.
+        4. Wait for the "Capture" button to enable.
       </p>
     </div>
   </div>

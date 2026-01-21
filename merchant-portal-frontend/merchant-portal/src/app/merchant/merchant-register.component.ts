@@ -3,7 +3,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { PortalService } from '../services/portal.service';
-import * as faceapi from 'face-api.js'; // Ensure this is imported
+import * as faceapi from 'face-api.js';
 
 @Component({
   selector: 'app-merchant-register',
@@ -15,7 +15,6 @@ export class MerchantRegisterComponent implements OnInit {
   form!: FormGroup;
   submitting = false;
 
-  // --- 1. Webcam Variables ---
   @ViewChild('videoElement') videoElement!: ElementRef<HTMLVideoElement>;
   @ViewChild('canvasElement') canvasElement!: ElementRef<HTMLCanvasElement>;
 
@@ -24,6 +23,11 @@ export class MerchantRegisterComponent implements OnInit {
   isFaceDetected = false;
   capturedImagePreview: string | null = null;
   capturedImageBlob: Blob | null = null;
+  modelsLoaded = false;
+  
+  // Live feedback message
+  feedbackMessage: string = '';
+  feedbackClass: string = ''; // 'success', 'warning', 'danger'
 
   constructor(private fb: FormBuilder, private portal: PortalService) { }
 
@@ -62,46 +66,128 @@ export class MerchantRegisterComponent implements OnInit {
       facilityRequired: ['', Validators.required],
       proofOfBusiness: [null, Validators.required],
     });
+  }
 
-    // --- 2. Load Face API Models (Keep this at the end of ngOnInit) ---
-    await Promise.all([
-      faceapi.nets.ssdMobilenetv1.loadFromUri('/assets/models'),
-      faceapi.nets.faceLandmark68Net.loadFromUri('/assets/models'), ]).then(() => console.log('✅ Models Loaded: SSD MobileNet + Landmarks'));
+  async loadModels() {
+    if (this.modelsLoaded) return;
+    
+    try {
+      this.feedbackMessage = 'Loading face detection models...';
+      this.feedbackClass = 'warning';
+      
+      const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
+      
+      await Promise.all([
+        faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+      ]);
+      
+      this.modelsLoaded = true;
+      this.feedbackMessage = 'Models loaded. Starting camera...';
+      this.feedbackClass = 'success';
+      console.log('✅ Models Loaded from CDN');
+    } catch (error) {
+      console.error('Failed to load models:', error);
+      this.feedbackMessage = 'Failed to load models. Check connection.';
+      this.feedbackClass = 'danger';
+      alert('Failed to load face detection models. Please check your internet connection.');
+    }
+  }
+
+  async startCamera() {
+    if (!this.modelsLoaded) {
+      await this.loadModels();
     }
 
-  // --- 3. New Camera Methods (Add these here) ---
-
-  startCamera() {
     this.isImageCaptured = false;
     this.capturedImageBlob = null;
     this.isCameraActive = true;
+    this.feedbackMessage = 'Accessing camera...';
+    this.feedbackClass = 'warning';
 
     navigator.mediaDevices.getUserMedia({ video: true })
       .then(stream => {
         this.videoElement.nativeElement.srcObject = stream;
-        this.detectFace(); // Start detection loop
+        this.feedbackMessage = 'Position your face in the frame';
+        this.feedbackClass = 'warning';
+        this.detectFace();
       })
-      .catch(err => console.error("Camera error:", err));
+      .catch(err => {
+        console.error("Camera error:", err);
+        this.feedbackMessage = 'Camera access denied';
+        this.feedbackClass = 'danger';
+      });
   }
 
   async detectFace() {
-  if (!this.isCameraActive || this.isImageCaptured) return;
+    if (!this.isCameraActive || this.isImageCaptured) return;
 
-  const video = this.videoElement.nativeElement;
-  
-  if(video.readyState === 4) {
-    // Use SsdMobilenetv1Options instead of TinyFace
-    // minConfidence: 0.5 is a good baseline for this model
-    const detections = await faceapi.detectAllFaces(
-      video, 
-      new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 })
-    );
+    const video = this.videoElement.nativeElement;
     
-    this.isFaceDetected = detections.length > 0;
-  }
+    if(video.readyState === 4) {
+      const detections = await faceapi.detectAllFaces(
+        video, 
+        new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 })
+      ).withFaceLandmarks();
+      
+      if (detections.length === 0) {
+        this.isFaceDetected = false;
+        this.feedbackMessage = 'No face detected. Please look at the camera.';
+        this.feedbackClass = 'danger';
+      } else if (detections.length > 1) {
+        this.isFaceDetected = false;
+        this.feedbackMessage = 'Multiple faces detected. Only one person allowed.';
+        this.feedbackClass = 'danger';
+      } else {
+        const detection = detections[0];
+        const box = detection.detection.box;
+        const videoWidth = video.videoWidth;
+        const videoHeight = video.videoHeight;
+        
+        // Calculate face size relative to frame
+        const faceWidth = box.width;
+        const faceHeight = box.height;
+        const faceArea = faceWidth * faceHeight;
+        const frameArea = videoWidth * videoHeight;
+        const faceRatio = faceArea / frameArea;
+        
+        // Check if face is centered
+        const faceCenterX = box.x + box.width / 2;
+        const faceCenterY = box.y + box.height / 2;
+        const frameCenterX = videoWidth / 2;
+        const frameCenterY = videoHeight / 2;
+        const offsetX = Math.abs(faceCenterX - frameCenterX);
+        const offsetY = Math.abs(faceCenterY - frameCenterY);
+        
+        if (faceRatio < 0.08) {
+          this.isFaceDetected = false;
+          this.feedbackMessage = 'Move closer to the camera';
+          this.feedbackClass = 'warning';
+        } else if (faceRatio > 0.4) {
+          this.isFaceDetected = false;
+          this.feedbackMessage = 'Move further from the camera';
+          this.feedbackClass = 'warning';
+        } else if (offsetX > videoWidth * 0.15) {
+          this.isFaceDetected = false;
+          this.feedbackMessage = 'Center your face horizontally';
+          this.feedbackClass = 'warning';
+        } else if (offsetY > videoHeight * 0.15) {
+          this.isFaceDetected = false;
+          this.feedbackMessage = 'Center your face vertically';
+          this.feedbackClass = 'warning';
+        } else {
+          this.isFaceDetected = true;
+          this.feedbackMessage = '✓ Perfect! Ready to capture';
+          this.feedbackClass = 'success';
+        }
+      }
+    } else {
+      this.feedbackMessage = 'Initializing camera...';
+      this.feedbackClass = 'warning';
+    }
 
-  requestAnimationFrame(() => this.detectFace());
-}
+    requestAnimationFrame(() => this.detectFace());
+  }
 
   capturePhoto() {
     if (!this.isFaceDetected) {
@@ -115,23 +201,20 @@ export class MerchantRegisterComponent implements OnInit {
     canvas.height = video.videoHeight;
     canvas.getContext('2d')?.drawImage(video, 0, 0);
 
-    // Get Blob for Upload
     canvas.toBlob((blob) => {
       this.capturedImageBlob = blob;
       this.capturedImagePreview = canvas.toDataURL('image/jpeg');
       this.isImageCaptured = true;
       this.isCameraActive = false;
+      this.feedbackMessage = 'Photo captured successfully!';
+      this.feedbackClass = 'success';
 
-      // Stop stream
       const stream = video.srcObject as MediaStream;
       stream.getTracks().forEach(track => track.stop());
     }, 'image/jpeg');
   }
 
-  // --- 4. Updated Submit Method ---
-
   submit(): void {
-    // Check form validity AND image capture
     if (this.form.invalid || !this.capturedImageBlob) {
       this.form.markAllAsTouched();
       if (!this.capturedImageBlob) alert("Please take a selfie verification photo.");
@@ -147,7 +230,6 @@ export class MerchantRegisterComponent implements OnInit {
       formData.append(key, formValues[key]);
     });
 
-    // Append the captured selfie
     formData.append('liveSelfie', this.capturedImageBlob, 'selfie.jpg');
 
     this.portal.submitApplication(formData).subscribe({
@@ -167,8 +249,6 @@ export class MerchantRegisterComponent implements OnInit {
       },
     });
   }
-
-  // --- Helper Methods ---
 
   showError(controlName: string): boolean {
     const control = this.form.get(controlName);

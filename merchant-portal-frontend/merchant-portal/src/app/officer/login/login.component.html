@@ -1,24 +1,64 @@
 <div class="login-container">
     <div class="form-card">
-        <h3 class="mb-4 text-center">Officer Login</h3>
-        <form [formGroup]="loginForm" (ngSubmit)="onLogin()">
-            <div class="mb-3">
-                <label for="username" class="form-label">Username</label>
-                <input type="text" id="username" class="form-control" formControlName="username">
-            </div>
-            <div class="mb-3">
-                <label for="password" class="form-label">Password</label>
-                <input type="password" id="password" class="form-control" formControlName="password">
-            </div>
-            <div *ngIf="errorMsg" class="alert alert-danger">
-                {{ errorMsg }}
-            </div>
-            <div class="d-grid">
-                <button type="submit" class="btn btn-primary" [disabled]="loginForm.invalid || submitting">
-                    <span *ngIf="!submitting">Login</span>
-                    <span *ngIf="submitting">Logging in...</span>
-                </button>
-            </div>
-        </form>
+        <!-- Stage 1: Username/Password Login -->
+        <div *ngIf="!requireTotp">
+            <h3 class="mb-4 text-center">Officer Login</h3>
+            <form [formGroup]="loginForm" (ngSubmit)="onLogin()">
+                <div class="mb-3">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" id="username" class="form-control" formControlName="username">
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" id="password" class="form-control" formControlName="password">
+                </div>
+                <div *ngIf="errorMsg" class="alert alert-danger">
+                    {{ errorMsg }}
+                </div>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary" [disabled]="loginForm.invalid || submitting">
+                        <span *ngIf="!submitting">Login</span>
+                        <span *ngIf="submitting">Logging in...</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Stage 2: TOTP Verification -->
+        <div *ngIf="requireTotp">
+            <h3 class="mb-4 text-center">Two-Factor Authentication</h3>
+            <p class="text-center text-muted mb-4">
+                Enter the 6-digit code from your Google Authenticator app
+            </p>
+            <form [formGroup]="totpForm" (ngSubmit)="onVerifyTotp()">
+                <div class="mb-3">
+                    <label for="totpCode" class="form-label">Verification Code</label>
+                    <input 
+                        type="text" 
+                        id="totpCode" 
+                        class="form-control text-center totp-input" 
+                        formControlName="totpCode"
+                        placeholder="000000"
+                        maxlength="6"
+                        autocomplete="off">
+                    <div *ngIf="totpForm.get('totpCode')?.invalid && totpForm.get('totpCode')?.touched" 
+                         class="text-danger small mt-1">
+                        Please enter a 6-digit code
+                    </div>
+                </div>
+                <div *ngIf="errorMsg" class="alert alert-danger">
+                    {{ errorMsg }}
+                </div>
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary" [disabled]="totpForm.invalid || submitting">
+                        <span *ngIf="!submitting">Verify</span>
+                        <span *ngIf="submitting">Verifying...</span>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" (click)="goBack()" [disabled]="submitting">
+                        Back to Login
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>

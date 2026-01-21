@@ -17,10 +17,38 @@ export class AuthService {
   login(credentials: { username: string, password: string }): Observable<any> {
     return this.http.post(`${this.apiUrl}/login`, credentials).pipe(
       tap((response: any) => {
+        // Only save token/role if TOTP is not required
+        if (!response.requireTotp) {
+          this.saveToken(response.token);
+          this.saveRole(response.role);
+        }
+      })
+    );
+  }
+
+  verifyTotp(tempToken: string, totpCode: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/verify-totp`, { tempToken, totpCode }).pipe(
+      tap((response: any) => {
         this.saveToken(response.token);
         this.saveRole(response.role);
       })
     );
+  }
+
+  setupTotp(): Observable<any> {
+    return this.http.post(`${this.apiUrl}/setup-totp`, {});
+  }
+
+  saveTempToken(token: string): void {
+    sessionStorage.setItem('temp-token', token);
+  }
+
+  getTempToken(): string | null {
+    return sessionStorage.getItem('temp-token');
+  }
+
+  clearTempToken(): void {
+    sessionStorage.removeItem('temp-token');
   }
 
   saveToken(token: string): void {
@@ -52,6 +80,7 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem(this.authTokenKey);
     localStorage.removeItem(this.authRoleKey);
+    this.clearTempToken();
     this.router.navigate(['/officer/login']);
   }
 }
